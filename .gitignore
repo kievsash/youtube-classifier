@@ -1,0 +1,71 @@
+# Dependencies
+node_modules/
+fe/node_modules/
+be/venv/
+be/venv311/
+
+# Build outputs
+fe/dist/
+fe/build/
+*.pyc
+__pycache__/
+be/__pycache__/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Video files
+*.mp4
+*.avi
+*.mov
+*.mkv
+be/downloaded_video.mp4
+
+# Model cache
+be/models/
+be/*.pth
+be/*.bin
+
+# Package manager lock files (optional - comment out if you want to track them)
+# package-lock.json
+# fe/package-lock.json
+
+# MongoDB data
+data/
+db/
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+
+
