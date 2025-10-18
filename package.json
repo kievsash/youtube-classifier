@@ -5,7 +5,7 @@
   "scripts": {
     "install:all": "npm install && cd fe && npm install",
     "install:fe": "cd fe && npm install",
-    "install:be": "cd be && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
+    "install:be": "cd be && python3.11 -m venv venv311 && source venv311/bin/activate && pip install -r requirements.txt",
     "dev": "concurrently \"npm run dev:be\" \"npm run dev:fe\"",
     "dev:fe": "cd fe && npm run dev",
     "dev:be": "cd be && source venv311/bin/activate && python app.py",

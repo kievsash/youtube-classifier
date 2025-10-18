@@ -9,7 +9,8 @@ youtube-classifier/
 ├── be/                    # Backend - Flask API with ML models
 │   ├── app.py            # Main Flask application
 │   ├── requirements.txt  # Python dependencies
-│   └── venv/            # Python virtual environment
+│   ├── SETUP.md          # Backend setup guide
+│   └── venv311/          # Python 3.11 virtual environment
 ├── fe/                    # Frontend - React + Vite
 │   ├── src/
 │   │   ├── App.jsx      # Main React component
@@ -22,11 +23,14 @@ youtube-classifier/
 
 ## 🚀 Quick Start
 
+> **⚠️ Important**: This project requires Python 3.11. If you don't have it installed, see `be/SETUP.md` for detailed installation instructions.
+
 ### Prerequisites
 
 - **Node.js** (v16 or higher)
-- **Python** (v3.11 or higher)
+- **Python 3.11** (Required - see `be/SETUP.md` for installation instructions)
 - **pip** (Python package manager)
+- **FFmpeg** (Required for video processing - see `be/INSTALL_FFMPEG.md`)
 
 ### 1. Install All Dependencies
 
@@ -171,9 +175,9 @@ GET http://localhost:5000/cache/stats
 ### Backend Development
 
 ```bash
-# Activate Python virtual environment
+# Activate Python 3.11 virtual environment
 cd be
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv311/bin/activate  # On Windows: venv311\Scripts\activate
 
 # Install new dependencies
 pip install package_name
@@ -182,6 +186,8 @@ pip freeze > requirements.txt
 # Run Flask with auto-reload
 python app.py
 ```
+
+**Important**: The backend requires Python 3.11. See `be/SETUP.md` for detailed setup instructions.
 
 ### Frontend Development
 
@@ -238,8 +244,15 @@ npm run build
 **"Module not found" errors:**
 ```bash
 cd be
-source venv/bin/activate
+source venv311/bin/activate  # Windows: venv311\Scripts\activate
 pip install -r requirements.txt
+```
+
+**"Wrong Python version":**
+```bash
+# Ensure you're using Python 3.11
+python --version  # Should show 3.11.x
+# See be/SETUP.md for Python 3.11 installation
 ```
 
 **"CUDA out of memory":**
@@ -256,7 +269,7 @@ pip install -r requirements.txt
 **CORS errors:**
 ```bash
 cd be
-source venv/bin/activate
+source venv311/bin/activate  # Windows: venv311\Scripts\activate
 pip install flask-cors
 ```
 
@@ -311,7 +324,8 @@ MIT License - free to use for commercial projects!
 
 ## 🆘 Support
 
-- **Backend Details**: See `be/README.md`
+- **Backend Setup**: See `be/SETUP.md` for Python 3.11 installation
+- **Backend Details**: See `be/README.md` for full documentation
 - **Frontend Details**: See `fe/README.md`
 - **Issues**: Create an issue in the repository
 

@@ -40,11 +40,15 @@ Without ffmpeg, you'll get errors like:
 
 ## 📋 Prerequisites
 
-- RunPod account with credits
+- **Python 3.11** (Required - see [SETUP.md](SETUP.md) for installation)
+- **FFmpeg** (Required - see [INSTALL_FFMPEG.md](INSTALL_FFMPEG.md))
+- RunPod account with credits (for GPU deployment)
 - MongoDB Atlas account (or local MongoDB)
 - Basic Python knowledge
 
 ## 🚀 Quick Start
+
+> **⚠️ Important**: This backend requires Python 3.11. For local development, see [SETUP.md](SETUP.md) for complete installation instructions.
 
 ### Step 1: Setup RunPod
 
@@ -86,6 +90,13 @@ ffmpeg -version
 SSH into your RunPod instance:
 
 ```bash
+# Ensure Python 3.11 is available
+python3.11 --version
+
+# Create virtual environment with Python 3.11
+python3.11 -m venv venv311
+source venv311/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
 
@@ -271,6 +282,8 @@ MIT License - feel free to use for commercial projects!
 
 ## 🆘 Support
 
+- **Setup Guide**: See [SETUP.md](SETUP.md) for Python 3.11 installation
+- **FFmpeg Guide**: See [INSTALL_FFMPEG.md](INSTALL_FFMPEG.md) for FFmpeg setup
 - RunPod Docs: [docs.runpod.io](https://docs.runpod.io)
 - MongoDB Atlas: [docs.mongodb.com](https://docs.mongodb.com)
 - Issues: Create an issue in your repository
