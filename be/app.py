@@ -73,9 +73,9 @@ if TRANSFORMERS_AVAILABLE and TORCH_AVAILABLE:
 # violence_model = load_model('path/to/violence_model')
 
 # Configuration
-CONFIDENCE_THRESHOLD = 0.6
+CONFIDENCE_THRESHOLD = 0.3  # Lowered from 0.6 to catch more detections
 BATCH_SIZE = 32  # Process 32 frames at once
-FPS_SAMPLING = 0.5  # Sample 0.5 frames per second (2x faster than 1 FPS)
+FPS_SAMPLING = 2.0  # Sample 2 frames per second (analyze every 0.5 seconds)
 USE_FP16 = TORCH_AVAILABLE and torch.cuda.is_available()  # Use half precision if GPU available
 
 if USE_FP16:
@@ -268,56 +268,102 @@ def extract_frames(video_path, fps=FPS_SAMPLING):
 def detect_nudity(frame_path):
     """Detect nudity using NudeNet"""
     if not nude_detector:
+        print(f"    ⚠️  [NudeNet] NOT AVAILABLE - skipping frame {frame_path}")
         return []
     
+    print(f"    🔍 [NudeNet] Analyzing frame: {frame_path}")
     results = nude_detector.detect(frame_path)
+    
+    print(f"    📊 [NudeNet] Found {len(results)} raw detections:")
+    for det in results:
+        print(f"       - {det['class']}: {det['score']:.3f} (threshold: {CONFIDENCE_THRESHOLD})")
+    
     detections = []
+    filtered_count = 0
     
     for det in results:
-        if det['score'] > CONFIDENCE_THRESHOLD:
-            label = det['class']
-            if label in ['FEMALE_BREAST_EXPOSED', 'FEMALE_GENITALIA_EXPOSED', 
-                        'MALE_GENITALIA_EXPOSED', 'BUTTOCKS_EXPOSED']:
+        label = det['class']
+        score = det['score']
+        
+        if label in ['FEMALE_BREAST_EXPOSED', 'FEMALE_GENITALIA_EXPOSED', 
+                    'MALE_GENITALIA_EXPOSED', 'BUTTOCKS_EXPOSED']:
+            if score > CONFIDENCE_THRESHOLD:
+                print(f"       ✅ ACCEPTED: {label} with confidence {score:.3f}")
                 detections.append({
                     'type': 'nudity',
-                    'confidence': det['score'],
-                    'severity': 'high'
+                    'confidence': score,
+                    'severity': 'high',
+                    'detected_by': 'NudeNet',
+                    'label': label
                 })
+            else:
+                filtered_count += 1
+                print(f"       ❌ FILTERED OUT: {label} (score {score:.3f} < threshold {CONFIDENCE_THRESHOLD})")
     
+    print(f"    ✅ [NudeNet] Result: {len(detections)} detections (filtered out: {filtered_count})")
     return detections
 
 def detect_nudity_batch(frame_paths):
     """BATCH PROCESSING: Detect nudity for multiple frames at once"""
+    print(f"\n  🔍 [NudeNet BATCH] Processing {len(frame_paths)} frames...")
     all_detections = []
     
+    if not nude_detector:
+        print(f"  ⚠️  [NudeNet BATCH] Detector not available - returning empty results")
+        return [[] for _ in frame_paths]
+    
     # NudeNet supports batch processing
-    for frame_path in frame_paths:
+    total_raw_detections = 0
+    total_accepted_detections = 0
+    
+    for i, frame_path in enumerate(frame_paths):
+        print(f"\n  📷 Frame {i+1}/{len(frame_paths)}:")
         detections = detect_nudity(frame_path)
         all_detections.append(detections)
+        total_accepted_detections += len(detections)
     
+    print(f"\n  ✅ [NudeNet BATCH] Complete: {total_accepted_detections} total detections across {len(frame_paths)} frames")
     return all_detections
 
 def detect_nsfw_general_batch(frame_paths):
     """BATCH PROCESSING: General NSFW detection for multiple frames"""
+    print(f"\n  🔍 [NSFW Classifier BATCH] Processing {len(frame_paths)} frames...")
     all_detections = []
     
     if not nsfw_classifier:
+        print(f"  ⚠️  [NSFW Classifier BATCH] Classifier not available - returning empty results")
         return [[] for _ in frame_paths]
     
     # Process all frames at once (much faster!)
+    print(f"  🚀 [NSFW Classifier] Running batch inference on {len(frame_paths)} frames...")
     results = nsfw_classifier(frame_paths)
     
-    for result in results:
+    total_accepted = 0
+    total_filtered = 0
+    
+    for i, result in enumerate(results):
+        print(f"\n  📷 Frame {i+1}/{len(frame_paths)}:")
         frame_detections = []
+        
         for item in result:
+            print(f"     - Label: {item['label']}, Score: {item['score']:.3f} (threshold: {CONFIDENCE_THRESHOLD})")
+            
             if item['label'] == 'nsfw' and item['score'] > CONFIDENCE_THRESHOLD:
+                print(f"       ✅ ACCEPTED: NSFW content detected with confidence {item['score']:.3f}")
                 frame_detections.append({
                     'type': 'adult_content',
                     'confidence': item['score'],
-                    'severity': 'medium'
+                    'severity': 'medium',
+                    'detected_by': 'NSFW_Classifier'
                 })
+                total_accepted += 1
+            elif item['label'] == 'nsfw':
+                print(f"       ❌ FILTERED OUT: NSFW score {item['score']:.3f} < threshold {CONFIDENCE_THRESHOLD}")
+                total_filtered += 1
+        
         all_detections.append(frame_detections)
     
+    print(f"\n  ✅ [NSFW Classifier BATCH] Complete: {total_accepted} detections, {total_filtered} filtered out")
     return all_detections
 
 def detect_violence_drugs(frame_path):
@@ -390,7 +436,19 @@ def analyze_frames(frames, detection_types):
     all_detections = []
     total_frames = len(frames)
     
-    print(f"🚀 Processing {total_frames} frames in batches of {BATCH_SIZE}")
+    print(f"\n{'='*80}")
+    print(f"🚀 FRAME ANALYSIS STARTING")
+    print(f"{'='*80}")
+    print(f"Total frames to process: {total_frames}")
+    print(f"Batch size: {BATCH_SIZE}")
+    print(f"Detection types enabled:")
+    for det_type, enabled in detection_types.items():
+        print(f"  - {det_type}: {'✅ ENABLED' if enabled else '❌ DISABLED'}")
+    print(f"Libraries available:")
+    print(f"  - NudeNet: {'✅ Available' if nude_detector else '❌ Not Available'}")
+    print(f"  - NSFW Classifier: {'✅ Available' if nsfw_classifier else '❌ Not Available'}")
+    print(f"Confidence threshold: {CONFIDENCE_THRESHOLD}")
+    print(f"{'='*80}\n")
     
     # Process frames in batches for massive speedup
     for batch_start in range(0, total_frames, BATCH_SIZE):
@@ -400,38 +458,82 @@ def analyze_frames(frames, detection_types):
         batch_paths = [f['path'] for f in batch_frames]
         batch_timestamps = [f['timestamp'] for f in batch_frames]
         
-        print(f"  Processing batch {batch_start//BATCH_SIZE + 1}/{(total_frames + BATCH_SIZE - 1)//BATCH_SIZE}")
+        batch_num = batch_start//BATCH_SIZE + 1
+        total_batches = (total_frames + BATCH_SIZE - 1)//BATCH_SIZE
+        
+        print(f"\n{'='*80}")
+        print(f"📦 BATCH {batch_num}/{total_batches} (frames {batch_start+1}-{batch_end})")
+        print(f"{'='*80}")
         
         # Run enabled detectors on batch
         batch_results = [[] for _ in range(len(batch_frames))]
         
         if detection_types.get('nudity', False):
+            print(f"\n🔍 Running NUDITY detection on batch...")
             nudity_results = detect_nudity_batch(batch_paths)
             for i, dets in enumerate(nudity_results):
                 batch_results[i].extend(dets)
+            print(f"✅ Nudity detection complete for batch")
+        else:
+            print(f"\n⏭️  NUDITY detection SKIPPED (not enabled)")
+        
+        # Also run NSFW classifier if nudity is enabled (additional check)
+        if detection_types.get('nudity', False):
+            print(f"\n🔍 Running NSFW Classifier on batch (additional check)...")
+            nsfw_results = detect_nsfw_general_batch(batch_paths)
+            for i, dets in enumerate(nsfw_results):
+                batch_results[i].extend(dets)
+            print(f"✅ NSFW classifier complete for batch")
         
         if detection_types.get('violence', False) or detection_types.get('drugs', False):
+            print(f"\n🔍 Running VIOLENCE/DRUGS detection on batch...")
             violence_results = detect_violence_drugs_batch(batch_paths)
             for i, dets in enumerate(violence_results):
                 batch_results[i].extend(dets)
+            print(f"✅ Violence/drugs detection complete for batch")
+        else:
+            print(f"\n⏭️  VIOLENCE/DRUGS detection SKIPPED (not enabled)")
         
         if detection_types.get('weapons', False) or detection_types.get('alcohol', False):
+            print(f"\n🔍 Running WEAPONS/ALCOHOL detection on batch...")
             weapons_results = detect_weapons_alcohol_batch(batch_paths)
             for i, dets in enumerate(weapons_results):
                 batch_results[i].extend(dets)
+            print(f"✅ Weapons/alcohol detection complete for batch")
+        else:
+            print(f"\n⏭️  WEAPONS/ALCOHOL detection SKIPPED (not enabled)")
         
         # Add timestamps to detections
+        batch_detection_count = 0
         for i, frame_detections in enumerate(batch_results):
             for det in frame_detections:
                 det['timestamp'] = batch_timestamps[i]
                 all_detections.append(det)
+                batch_detection_count += 1
+        
+        print(f"\n📊 Batch {batch_num} summary: {batch_detection_count} detections found")
         
         # Clean up batch frames
         for path in batch_paths:
             if os.path.exists(path):
                 os.remove(path)
     
-    print(f"✅ Found {len(all_detections)} detections")
+    print(f"\n{'='*80}")
+    print(f"✅ FRAME ANALYSIS COMPLETE")
+    print(f"{'='*80}")
+    print(f"Total detections found: {len(all_detections)}")
+    if all_detections:
+        print(f"Detection breakdown:")
+        detection_counts = {}
+        for det in all_detections:
+            det_type = det.get('type', 'unknown')
+            det_by = det.get('detected_by', 'unknown')
+            key = f"{det_type} ({det_by})"
+            detection_counts[key] = detection_counts.get(key, 0) + 1
+        for key, count in detection_counts.items():
+            print(f"  - {key}: {count}")
+    print(f"{'='*80}\n")
+    
     return all_detections
 
 def cluster_detections(detections, gap_threshold=5):
@@ -478,7 +580,9 @@ def analyze_video():
         
         print(f"\n{'='*60}")
         print(f"🎬 New analysis request for: {video_url}")
-        print(f"🔍 Detection types: {[k for k, v in detection_types.items() if v]}")
+        print(f"📋 RAW detection_types received: {detection_types}")
+        print(f"🔍 ENABLED detection types: {[k for k, v in detection_types.items() if v]}")
+        print(f"❌ DISABLED detection types: {[k for k, v in detection_types.items() if not v]}")
         print(f"{'='*60}\n")
         
         # Extract video ID
@@ -504,12 +608,20 @@ def analyze_video():
         download_time = time.time() - download_start
         print(f"⏱️  Download time: {download_time:.2f}s")
         
+        # Check if any detection types are enabled
+        any_enabled = any(detection_types.values())
+        print(f"\n🔍 Any detection types enabled? {any_enabled}")
+        if not any_enabled:
+            print("⚠️  WARNING: No detection types are enabled! Skipping frame extraction and analysis.")
+            print("⚠️  Make sure at least one detection type is checked in the frontend!")
+        
         # Extract frames
         print("\n🎞️  Extracting frames...")
         extract_start = time.time()
         frames = extract_frames(video_path, fps=FPS_SAMPLING)
         extract_time = time.time() - extract_start
         print(f"⏱️  Frame extraction: {extract_time:.2f}s")
+        print(f"📊 Extracted {len(frames)} frames")
         
         # Analyze frames
         print(f"\n🔍 Analyzing {len(frames)} frames with batch processing...")

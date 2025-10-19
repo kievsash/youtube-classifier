@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Clock, Video, AlertTriangle, Shield, Settings, Flame, Wine, Pill } from 'lucide-react';
 
 const VideoModerator = () => {
-  const [videoUrl, setVideoUrl] = useState('');
+  const DEFAULT_VIDEO_URL = 'https://www.youtube.com/watch?v=PNFwsOTvJ40';
+  
+  // Load videoUrl from localStorage or use default
+  const [videoUrl, setVideoUrl] = useState(() => {
+    const savedUrl = localStorage.getItem('lastVideoUrl');
+    return savedUrl || DEFAULT_VIDEO_URL;
+  });
+  
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState('');
@@ -17,6 +24,13 @@ const VideoModerator = () => {
     weapons: true,
     gore: false
   });
+
+  // Save videoUrl to localStorage whenever it changes
+  useEffect(() => {
+    if (videoUrl.trim()) {
+      localStorage.setItem('lastVideoUrl', videoUrl);
+    }
+  }, [videoUrl]);
 
   const toggleDetectionType = (type) => {
     setDetectionTypes(prev => ({ ...prev, [type]: !prev[type] }));
