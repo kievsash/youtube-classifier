@@ -83,7 +83,13 @@ if USE_FP16:
 
 def extract_video_id(url):
     """Extract YouTube video ID from URL"""
-    ydl = yt_dlp.YoutubeDL({'quiet': True})
+    ydl_opts = {
+        'quiet': True,
+        'nocheckcertificate': True,
+        'no_check_certificate': True,
+        'source_address': '0.0.0.0'
+    }
+    ydl = yt_dlp.YoutubeDL(ydl_opts)
     try:
         info = ydl.extract_info(url, download=False)
         return info.get('id', None)
@@ -173,8 +179,10 @@ def download_video(url):
         'retries': 3,  # Retry on failure
         'fragment_retries': 3,
         'ignoreerrors': False,
-        'nocheckcertificate': True,  # Some videos have certificate issues
+        'nocheckcertificate': True,  # Bypass SSL certificate verification
+        'no_check_certificate': True,  # Alternative spelling for compatibility
         'merge_output_format': 'mp4',  # Force MP4 container
+        'source_address': '0.0.0.0',  # Bind to all network interfaces
         # Post-processing to ensure OpenCV compatibility (only if ffmpeg available)
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',

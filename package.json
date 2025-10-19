@@ -8,13 +8,14 @@
     "install:be": "cd be && python3.11 -m venv venv311 && source venv311/bin/activate && pip install -r requirements.txt",
     "dev": "concurrently \"npm run dev:be\" \"npm run dev:fe\"",
     "dev:fe": "cd fe && npm run dev",
-    "dev:be": "cd be && source venv311/bin/activate && python app.py",
+    "dev:be": "cd be && ./run.sh",
+    "be": "cd be && ./run.sh",
     "start": "npm run dev",
     "build": "cd fe && npm run build",
     "build:fe": "cd fe && npm run build",
     "preview": "cd fe && npm run preview",
     "clean": "rm -rf fe/node_modules fe/dist fe/package-lock.json node_modules package-lock.json",
-    "health": "curl http://localhost:5000/health && curl http://localhost:5173"
+    "health": "curl http://localhost:5001/health && curl http://localhost:5173"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
